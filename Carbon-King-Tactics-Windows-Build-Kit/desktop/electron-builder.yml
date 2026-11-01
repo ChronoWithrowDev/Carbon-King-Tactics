@@ -1,0 +1,24 @@
+appId: com.nearfuturecolorado.carbonkingtactics
+productName: Carbon King Tactics - Colorado 2041
+directories:
+  output: release
+files:
+  - dist/**/*
+  - desktop/main.cjs
+  - package.json
+asar: true
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  artifactName: 'Carbon-King-Tactics-${version}-${arch}.${ext}'
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Carbon King Tactics
+portable:
+  artifactName: 'Carbon-King-Tactics-Portable-${version}-${arch}.${ext}'
