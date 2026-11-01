@@ -1,0 +1,42 @@
+name: Build Carbon King Tactics Windows Launcher
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    name: Build Windows installer and portable app
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out game
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows applications
+        shell: pwsh
+        run: |
+          npm run dist:win
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload Windows executables
+        uses: actions/upload-artifact@v7
+        with:
+          name: Carbon-King-Tactics-Windows-Installers
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 30
