@@ -1,3 +1,4 @@
+
 name: Build Carbon King Tactics Windows Launcher
 
 on:
@@ -10,7 +11,7 @@ permissions:
 
 jobs:
   build-windows:
-    name: Build Windows installer and portable app
+    name: Build Windows Installers
     runs-on: windows-latest
 
     steps:
@@ -22,12 +23,48 @@ jobs:
         with:
           node-version: 22
 
+      - name: Find game project
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Filter package.json -Recurse -File |
+            Where-Object {
+              $_.FullName -notmatch '[\\/](node_modules|\.git)[\\/]'
+            }
+
+          $game = $null
+
+          foreach ($file in $files) {
+            try {
+              $pkg = Get-Content $file.FullName -Raw | ConvertFrom-Json
+              $config = Join-Path $file.DirectoryName "desktop/electron-builder.yml"
+
+              if ($pkg.scripts.'dist:win' -and (Test-Path $config)) {
+                $game = $file.DirectoryName
+                break
+              }
+            } catch {}
+          }
+
+          if (-not $game) {
+            throw "Could not find Carbon King Tactics package.json and Electron configuration."
+          }
+
+          "GAME_DIR=$game" |
+            Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          Write-Host "Found Carbon King Tactics: $game"
+
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        shell: pwsh
+        run: |
+          Set-Location $env:GAME_DIR
+          npm install --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build Windows applications
         shell: pwsh
         run: |
+          Set-Location $env:GAME_DIR
           npm run dist:win
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         env:
@@ -37,6 +74,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: Carbon-King-Tactics-Windows-Installers
-          path: release/*.exe
+          path: '**/release/*.exe'
           if-no-files-found: error
           retention-days: 30
